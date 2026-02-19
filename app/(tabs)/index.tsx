@@ -3,29 +3,18 @@ import * as Location from 'expo-location';
 import { transit_realtime } from 'gtfs-realtime-bindings';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  ActivityIndicator,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
+    ActivityIndicator,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    View,
 } from 'react-native';
 import { WebView } from 'react-native-webview';
 
 import { useSettings } from '@/context/settings-context';
 import { fetchRussianTracks } from '@/services/russian-tracker-service';
-
-// SURPRISE_FEATURE: Import the surprise feature (remove this import to disable)
-import {
-  SURPRISE_CONFIG,
-  SURPRISE_ENABLED,
-  SURPRISE_MESSAGE_HANDLERS,
-  SURPRISE_SCRIPTS,
-  SURPRISE_STYLES,
-  getSurprisePayload,
-  isSurpriseTrigger,
-} from '@/components/surprise-feature';
 
 const globalAny = globalThis as any;
 if (!globalAny.Buffer) globalAny.Buffer = Buffer;
@@ -225,8 +214,6 @@ function buildMapHtml() {
         font-weight: 600;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
       }
-      /* SURPRISE_FEATURE: Styles injected from component */
-      ${SURPRISE_ENABLED ? SURPRISE_STYLES : ''}
     </style>
   </head>
   <body>
@@ -621,90 +608,27 @@ function buildMapHtml() {
         
         russianTracksLayerGroup = L.layerGroup();
         russianTracksData.forEach((track) => {
-          const label = track.callsign || track.icao24;
-          const baseColor = track.is_military ? '#ff0000' : '#ff6b6b';
+          const coords = track.positions
+            .filter(p => p.latitude != null && p.longitude != null)
+            .map(p => [p.latitude, p.longitude]);
           
-          // If track has segments, draw each segment separately
-          if (track.segments && track.segments.length > 0) {
-            track.segments.forEach((segment, segIndex) => {
-              const segCoords = segment.positions
-                .filter(p => p.latitude != null && p.longitude != null)
-                .map(p => [p.latitude, p.longitude]);
-              
-              if (segCoords.length < 2) return;
-              
-              // Segments with gaps before them are drawn with lower opacity and more spaced dashes
-              const hasGap = segment.hasGapBefore;
-              const gapMinutes = segment.gapDurationSeconds ? Math.round(segment.gapDurationSeconds / 60) : 0;
-              
-              const polyline = L.polyline(segCoords, {
-                color: hasGap ? '#ffaa00' : baseColor,  // Orange for gap segments
-                weight: hasGap ? 1.5 : 2,
-                opacity: hasGap ? 0.4 : 0.7,
-                dashArray: hasGap ? '2, 8' : '5, 5'  // More sparse dashes for gap segments
-              });
-              
-              let tooltipText = label + (track.is_military ? ' (MIL)' : '');
-              if (hasGap && gapMinutes > 0) {
-                tooltipText += ' [' + gapMinutes + 'min gap - estimated path]';
-              }
-              polyline.bindTooltip(tooltipText, {
-                permanent: false,
-                direction: 'center',
-                className: 'russian-track-tooltip'
-              });
-              
-              russianTracksLayerGroup.addLayer(polyline);
-              
-              // Draw connecting line between segments (the uncertain part)
-              if (segIndex > 0 && hasGap) {
-                const prevSegment = track.segments[segIndex - 1];
-                if (prevSegment.positions.length > 0) {
-                  const lastPrevPos = prevSegment.positions[prevSegment.positions.length - 1];
-                  const firstCurrPos = segment.positions[0];
-                  if (lastPrevPos.latitude && lastPrevPos.longitude && 
-                      firstCurrPos.latitude && firstCurrPos.longitude) {
-                    const gapLine = L.polyline([
-                      [lastPrevPos.latitude, lastPrevPos.longitude],
-                      [firstCurrPos.latitude, firstCurrPos.longitude]
-                    ], {
-                      color: '#888888',  // Gray for unknown path
-                      weight: 1,
-                      opacity: 0.3,
-                      dashArray: '1, 6'  // Very sparse dashes
-                    });
-                    gapLine.bindTooltip('Unknown path (' + gapMinutes + 'min gap)', {
-                      permanent: false,
-                      direction: 'center'
-                    });
-                    russianTracksLayerGroup.addLayer(gapLine);
-                  }
-                }
-              }
-            });
-          } else {
-            // Fallback: draw all positions as single track (legacy behavior)
-            const coords = track.positions
-              .filter(p => p.latitude != null && p.longitude != null)
-              .map(p => [p.latitude, p.longitude]);
-            
-            if (coords.length < 2) return;
-            
-            const polyline = L.polyline(coords, {
-              color: baseColor,
-              weight: 2,
-              opacity: 0.7,
-              dashArray: '5, 5'
-            });
-            
-            polyline.bindTooltip(label + (track.is_military ? ' (MIL)' : ''), {
-              permanent: false,
-              direction: 'center',
-              className: 'russian-track-tooltip'
-            });
-            
-            russianTracksLayerGroup.addLayer(polyline);
-          }
+          if (coords.length < 2) return;
+          
+          const polyline = L.polyline(coords, {
+            color: track.is_military ? '#ff0000' : '#ff6b6b',
+            weight: 2,
+            opacity: 0.7,
+            dashArray: '5, 5'
+          });
+          
+          const label = track.callsign || track.icao24;
+          polyline.bindTooltip(label + (track.is_military ? ' (MIL)' : ''), {
+            permanent: false,
+            direction: 'center',
+            className: 'russian-track-tooltip'
+          });
+          
+          russianTracksLayerGroup.addLayer(polyline);
         });
         russianTracksLayerGroup.addTo(map);
       }
@@ -1245,15 +1169,10 @@ function buildMapHtml() {
         }
       }
 
-      /* SURPRISE_FEATURE: Scripts injected from component */
-      ${SURPRISE_ENABLED ? SURPRISE_SCRIPTS(SURPRISE_CONFIG.icon) : ''}
-
       function handleMessage(event) {
         try {
           const data = JSON.parse(event.data);
           if (data.type === 'aircraft') updateAircraft(data.items || []);
-          /* SURPRISE_FEATURE: Message handlers from component */
-          ${SURPRISE_ENABLED ? SURPRISE_MESSAGE_HANDLERS : ''}
           if (data.type === 'center') setCenter(data.lat, data.lon, data.zoom);
           if (data.type === 'me') updateMe(data.lat, data.lon, data.heading);
           if (data.type === 'hslBus') updateBusMarker(data.bus);
@@ -1818,17 +1737,6 @@ export default function HomeScreen() {
 
     // Clear existing markers when filter changes
     webViewRef.current?.postMessage(JSON.stringify({ type: 'hslClear' }));
-
-    // SURPRISE_FEATURE: Easter egg trigger (remove this block to disable)
-    if (SURPRISE_ENABLED) {
-      if (isSurpriseTrigger(hslLineFilter)) {
-        webViewRef.current?.postMessage(JSON.stringify(getSurprisePayload(hslLineFilter)));
-        setHslStatus('ok');
-        return;
-      } else {
-        webViewRef.current?.postMessage(JSON.stringify({ type: 'hideSurprise' }));
-      }
-    }
 
     const coords = useCustomCenter
       ? customCenter

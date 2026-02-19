@@ -5,10 +5,12 @@ import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 're
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useSettings } from '@/context/settings-context';
+import { clearRussianTracks } from '@/services/russian-tracker-service';
 
 export default function ExploreScreen() {
-  const [aircraftExpanded, setAircraftExpanded] = useState(true);
   const [hslExpanded, setHslExpanded] = useState(false);
+  const [aircraftExpanded, setAircraftExpanded] = useState(true);
+  const [isClearing, setIsClearing] = useState(false);
   const {
     radiusKm,
     setRadiusKm,
@@ -43,122 +45,116 @@ export default function ExploreScreen() {
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <ThemedView style={styles.section}>
-        <Pressable style={styles.sectionHeader} onPress={() => {
-          setAircraftExpanded((prev) => !prev);
-          if (!aircraftExpanded) setHslExpanded(false);
-        }}>
+        <Pressable style={styles.sectionHeader} onPress={() => setAircraftExpanded((prev) => !prev)}>
           <ThemedText style={styles.subtitle}>Aircraft Tracker</ThemedText>
           <Text style={styles.arrow}>{aircraftExpanded ? 'v' : '>'}</Text>
         </Pressable>
         {aircraftExpanded ? (
           <View style={styles.hslPanel}>
-            <ThemedText style={styles.label}>Radius: {Math.round(radiusKm)} km</ThemedText>
+      <ThemedText style={styles.label}>Radius: {Math.round(radiusKm)} km</ThemedText>
 
-            <View style={styles.sliderCard}>
-              <Slider
-                minimumValue={10}
-                maximumValue={430}
-                step={5}
-                value={radiusKm}
-                minimumTrackTintColor="#f7c948"
-                maximumTrackTintColor="#2b2f36"
-                thumbTintColor="#f7c948"
-                onValueChange={(value) => setRadiusKm(value)}
-              />
-              <View style={styles.rangeRow}>
-                <Text style={styles.rangeText}>10 km</Text>
-                <Text style={styles.rangeText}>430 km</Text>
-              </View>
-            </View>
+      <View style={styles.sliderCard}>
+        <Slider
+          minimumValue={10}
+          maximumValue={430}
+          step={5}
+          value={radiusKm}
+          minimumTrackTintColor="#f7c948"
+          maximumTrackTintColor="#2b2f36"
+          thumbTintColor="#f7c948"
+          onValueChange={(value) => setRadiusKm(value)}
+        />
+        <View style={styles.rangeRow}>
+          <Text style={styles.rangeText}>10 km</Text>
+          <Text style={styles.rangeText}>430 km</Text>
+        </View>
+      </View>
 
-            <View style={styles.toggleRow}>
-              <Text style={styles.label}>Enable map pick</Text>
-              <Switch
-                value={useCustomCenter}
-                onValueChange={(value) => setUseCustomCenter(value)}
-                trackColor={{ false: '#2b2f36', true: '#f7c948' }}
-                thumbColor={useCustomCenter ? '#0f1116' : '#9aa4b2'}
-              />
-            </View>
-            <View style={styles.toggleRow}>
-              <Text style={styles.label}>Enable tracing</Text>
-              <Switch
-                value={enableTracing}
-                onValueChange={(value) => setEnableTracing(value)}
-                trackColor={{ false: '#2b2f36', true: '#a66cff' }}
-                thumbColor={enableTracing ? '#0f1116' : '#9aa4b2'}
-              />
-            </View>
-            <View style={styles.toggleRow}>
-              <Text style={styles.label}>Enable proximity</Text>
-              <Switch
-                value={enableProximity}
-                onValueChange={(value) => setEnableProximity(value)}
-                trackColor={{ false: '#2b2f36', true: '#4fd1c5' }}
-                thumbColor={enableProximity ? '#0f1116' : '#9aa4b2'}
-              />
-            </View>
-            <View style={styles.toggleRow}>
-              <Text style={styles.label}>FIR Airspaces</Text>
-              <Switch
-                value={showFirAirspaces}
-                onValueChange={(value) => setShowFirAirspaces(value)}
-                trackColor={{ false: '#2b2f36', true: '#ff6b6b' }}
-                thumbColor={showFirAirspaces ? '#0f1116' : '#9aa4b2'}
-              />
-            </View>
-            <View style={styles.toggleRow}>
-              <Text style={styles.label}>Russian Aircraft Tracks</Text>
-              <Switch
-                value={showRussianAircraft}
-                onValueChange={(value) => setShowRussianAircraft(value)}
-                trackColor={{ false: '#2b2f36', true: '#ff4444' }}
-                thumbColor={showRussianAircraft ? '#0f1116' : '#9aa4b2'}
-              />
-            </View>
-            <Pressable
-              style={styles.clearButton}
-              onPress={() => {
-                Alert.alert(
-                  'Clear Tracking Data',
-                  'This will delete all Russian aircraft tracking data from the database. This action cannot be undone.',
-                  [
-                    { text: 'Cancel', style: 'cancel' },
-                    {
-                      text: 'Clear All Data',
-                      style: 'destructive',
-                      onPress: async () => {
-                        try {
-                          const backendUrl = process.env.EXPO_PUBLIC_TRACKER_BACKEND_URL || 'http://localhost:3000';
-                          const response = await fetch(`${backendUrl}/api/aircraft/tracks`, {
-                            method: 'DELETE',
-                          });
-                          if (response.ok) {
-                            const data = await response.json();
-                            Alert.alert('Success', `Cleared ${data.deleted.positions} positions and ${data.deleted.aircraft} aircraft records.`);
-                          } else {
-                            Alert.alert('Error', 'Failed to clear tracking data.');
-                          }
-                        } catch (error) {
-                          Alert.alert('Error', 'Could not connect to the backend.');
-                        }
-                      },
-                    },
-                  ]
-                );
-              }}
-            >
-              <Text style={styles.clearButtonText}>Clear Tracks Data</Text>
-            </Pressable>
+        <View style={styles.toggleRow}>
+          <Text style={styles.label}>Enable map pick</Text>
+          <Switch
+            value={useCustomCenter}
+            onValueChange={(value) => setUseCustomCenter(value)}
+            trackColor={{ false: '#2b2f36', true: '#f7c948' }}
+            thumbColor={useCustomCenter ? '#0f1116' : '#9aa4b2'}
+          />
+        </View>
+        <View style={styles.toggleRow}>
+          <Text style={styles.label}>Enable tracing</Text>
+          <Switch
+            value={enableTracing}
+            onValueChange={(value) => setEnableTracing(value)}
+            trackColor={{ false: '#2b2f36', true: '#a66cff' }}
+            thumbColor={enableTracing ? '#0f1116' : '#9aa4b2'}
+          />
+        </View>
+        <View style={styles.toggleRow}>
+          <Text style={styles.label}>Enable proximity</Text>
+          <Switch
+            value={enableProximity}
+            onValueChange={(value) => setEnableProximity(value)}
+            trackColor={{ false: '#2b2f36', true: '#4fd1c5' }}
+            thumbColor={enableProximity ? '#0f1116' : '#9aa4b2'}
+          />
+        </View>
+        <View style={styles.toggleRow}>
+          <Text style={styles.label}>FIR Airspaces</Text>
+          <Switch
+            value={showFirAirspaces}
+            onValueChange={(value) => setShowFirAirspaces(value)}
+            trackColor={{ false: '#2b2f36', true: '#ff6b6b' }}
+            thumbColor={showFirAirspaces ? '#0f1116' : '#9aa4b2'}
+          />
+        </View>
+        <View style={styles.toggleRow}>
+          <Text style={styles.label}>Russian Aircraft Tracks</Text>
+          <Switch
+            value={showRussianAircraft}
+            onValueChange={(value) => setShowRussianAircraft(value)}
+            trackColor={{ false: '#2b2f36', true: '#ff4444' }}
+            thumbColor={showRussianAircraft ? '#0f1116' : '#9aa4b2'}
+          />
+        </View>
+        <Pressable
+          style={[styles.clearButton, isClearing && styles.clearButtonDisabled]}
+          disabled={isClearing}
+          onPress={() => {
+            Alert.alert(
+              'Clear Russian Aircraft Data',
+              'This will permanently delete all stored Russian aircraft tracks from the database. Are you sure?',
+              [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                  text: 'Clear All Data',
+                  style: 'destructive',
+                  onPress: async () => {
+                    setIsClearing(true);
+                    const result = await clearRussianTracks();
+                    setIsClearing(false);
+                    if (result.success) {
+                      Alert.alert(
+                        'Data Cleared',
+                        `Deleted ${result.deleted?.aircraft || 0} aircraft and ${result.deleted?.positions || 0} positions.`
+                      );
+                    } else {
+                      Alert.alert('Error', 'Failed to clear data. Please try again.');
+                    }
+                  },
+                },
+              ]
+            );
+          }}
+        >
+          <Text style={styles.clearButtonText}>
+            {isClearing ? 'Clearing...' : 'Clear Russian Aircraft Data'}
+          </Text>
+        </Pressable>
           </View>
         ) : null}
       </ThemedView>
 
       <ThemedView style={styles.section}>
-        <Pressable style={styles.sectionHeader} onPress={() => {
-          setHslExpanded((prev) => !prev);
-          if (!hslExpanded) setAircraftExpanded(false);
-        }}>
+        <Pressable style={styles.sectionHeader} onPress={() => setHslExpanded((prev) => !prev)}>
           <ThemedText style={styles.subtitle}>HSL</ThemedText>
           <Text style={styles.arrow}>{hslExpanded ? 'v' : '>'}</Text>
         </Pressable>
@@ -315,12 +311,16 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   clearButton: {
+    marginTop: 8,
     backgroundColor: '#ff4444',
-    paddingVertical: 8,
+    paddingVertical: 6,
     paddingHorizontal: 12,
     borderRadius: 6,
-    marginTop: 10,
     alignSelf: 'flex-start',
+  },
+  clearButtonDisabled: {
+    backgroundColor: '#663333',
+    opacity: 0.7,
   },
   clearButtonText: {
     color: '#ffffff',

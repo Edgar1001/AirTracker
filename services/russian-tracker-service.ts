@@ -66,6 +66,32 @@ export async function fetchRussianTracks(
 }
 
 /**
+ * Clear all Russian aircraft data from the database
+ */
+export async function clearRussianTracks(): Promise<{ success: boolean; deleted?: { aircraft: number; positions: number } }> {
+  try {
+    const response = await fetch(`${BACKEND_URL}/api/aircraft/russian`, {
+      method: 'DELETE',
+      headers: {
+        'Accept': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      console.error(`Failed to clear Russian tracks: ${response.status}`);
+      return { success: false };
+    }
+
+    const data = await response.json();
+    console.log(`🗑️ Cleared ${data.deleted?.aircraft || 0} aircraft and ${data.deleted?.positions || 0} positions`);
+    return data;
+  } catch (error) {
+    console.error('Error clearing Russian tracks:', error);
+    return { success: false };
+  }
+}
+
+/**
  * Check if the backend is available
  */
 export async function checkBackendHealth(): Promise<boolean> {
