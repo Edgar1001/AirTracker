@@ -4,6 +4,7 @@ import { transit_realtime } from 'gtfs-realtime-bindings';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
     ActivityIndicator,
+    Alert,
     Pressable,
     ScrollView,
     StyleSheet,
@@ -214,6 +215,77 @@ function buildMapHtml() {
         font-weight: 600;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
       }
+      .military-airspace-label {
+        background: rgba(14, 17, 22, 0.75);
+        color: #e0e0e0;
+        border: 1px solid rgba(255, 149, 0, 0.4);
+        border-radius: 4px;
+        padding: 2px 5px;
+        font-size: 9px;
+        font-weight: 600;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+        white-space: nowrap;
+      }
+      .military-airspace-label::before {
+        display: none;
+      }
+      .military-airspace-popup .leaflet-popup-content-wrapper {
+        background: rgba(14, 17, 22, 0.95);
+        color: #e0e0e0;
+        border: 1px solid rgba(255, 149, 0, 0.5);
+        border-radius: 8px;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+      }
+      .military-airspace-popup .leaflet-popup-tip {
+        background: rgba(14, 17, 22, 0.95);
+        border: 1px solid rgba(255, 149, 0, 0.5);
+      }
+      .military-airspace-popup .leaflet-popup-close-button {
+        color: #9aa4b2;
+      }
+      .static-fixed-label {
+        background: rgba(14, 17, 22, 0.92);
+        color: #f5f7fb;
+        border: 1px solid rgba(255, 59, 48, 0.55);
+        border-radius: 8px;
+        padding: 4px 8px;
+        font-size: 11px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: font-size 0.15s ease, padding 0.15s ease;
+      }
+      #map.static-label-compact .static-fixed-label {
+        font-size: 10px;
+        padding: 3px 6px;
+      }
+      #map.static-label-small .static-fixed-label {
+        font-size: 9px;
+        padding: 2px 5px;
+      }
+      #map.static-label-tiny .static-fixed-label {
+        font-size: 8px;
+        padding: 1px 4px;
+      }
+      .static-fixed-label::before {
+        border-top-color: rgba(14, 17, 22, 0.92);
+      }
+      .static-fixed-popup .leaflet-popup-content-wrapper {
+        background: rgba(14, 17, 22, 0.92);
+        color: #f5f7fb;
+        border: 1px solid rgba(255, 59, 48, 0.55);
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+      }
+      .static-fixed-popup .leaflet-popup-content {
+        margin: 8px 10px;
+      }
+      .static-fixed-popup .leaflet-popup-tip {
+        background: rgba(14, 17, 22, 0.92);
+        border: 1px solid rgba(255, 59, 48, 0.55);
+      }
+      .static-fixed-popup .leaflet-popup-close-button {
+        color: #f5f7fb;
+      }
     </style>
   </head>
   <body>
@@ -222,6 +294,20 @@ function buildMapHtml() {
     <script>
       const map = L.map('map', { zoomControl: true }).setView([0, 0], 2);
       map.zoomControl.setPosition('bottomright');
+      const mapContainer = map.getContainer();
+      function updateStaticLabelScale() {
+        const zoom = map.getZoom();
+        mapContainer.classList.remove('static-label-compact', 'static-label-small', 'static-label-tiny');
+        if (zoom <= 3) {
+          mapContainer.classList.add('static-label-tiny');
+        } else if (zoom <= 5) {
+          mapContainer.classList.add('static-label-small');
+        } else if (zoom <= 7) {
+          mapContainer.classList.add('static-label-compact');
+        }
+      }
+      map.on('zoomend', updateStaticLabelScale);
+      updateStaticLabelScale();
       const osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
         attribution: '&copy; OpenStreetMap contributors'
@@ -273,6 +359,654 @@ function buildMapHtml() {
       };
 
       L.control.layers(baseLayers, null, { position: 'topright' }).addTo(map);
+
+      // Static reference markers that are independent from filters/radius.
+      const staticMarkers = [
+        {
+          lat: 54.0,
+          lon: 35.8,
+          label: 'Kozelsk',
+          info: {
+            baseType: 'Nuclear ICBM Fields (Strategic Rocket Forces)',
+            location: '54.0°N, 35.8°E',
+            missileType: 'RS-24 Yars (silo)'
+          }
+        },
+        {
+          lat: 51.7,
+          lon: 45.7,
+          label: 'Tatishchevo',
+          info: {
+            baseType: 'Nuclear ICBM Fields (Strategic Rocket Forces)',
+            location: '51.7°N, 45.7°E',
+            missileType: 'RS-24 Yars (silo)'
+          }
+        },
+        {
+          lat: 55.3,
+          lon: 89.8,
+          label: 'Uzhur',
+          info: {
+            baseType: 'Nuclear ICBM Fields (Strategic Rocket Forces)',
+            location: '55.3°N, 89.8°E',
+            missileType: 'RS-18/Avangard (silo)'
+          }
+        },
+        {
+          lat: 50.8,
+          lon: 59.5,
+          label: 'Dombarovsky',
+          info: {
+            baseType: 'Nuclear ICBM Fields (Strategic Rocket Forces)',
+            location: '50.8°N, 59.5°E',
+            missileType: 'RS-28 Sarmat (silo)'
+          }
+        },
+        {
+          lat: 56.9,
+          lon: 40.3,
+          label: 'Teykovo',
+          info: {
+            baseType: 'Nuclear ICBM Fields (Strategic Rocket Forces)',
+            location: '56.9°N, 40.3°E',
+            missileType: 'RS-24 Yars (mobile)'
+          }
+        },
+        {
+          lat: 56.6,
+          lon: 47.9,
+          label: 'Yoshkar-Ola',
+          info: {
+            baseType: 'Nuclear ICBM Fields (Strategic Rocket Forces)',
+            location: '56.6°N, 47.9°E',
+            missileType: 'RS-24 Yars (mobile)'
+          }
+        },
+        {
+          lat: 55.1,
+          lon: 83.0,
+          label: 'Novosibirsk (Pashino)',
+          info: {
+            baseType: 'Nuclear ICBM Fields (Strategic Rocket Forces)',
+            location: '55.1°N, 83.0°E',
+            missileType: 'RS-24 Yars (mobile)'
+          }
+        },
+        {
+          lat: 53.4,
+          lon: 83.8,
+          label: 'Barnaul',
+          info: {
+            baseType: 'Nuclear ICBM Fields (Strategic Rocket Forces)',
+            location: '53.4°N, 83.8°E',
+            missileType: 'RS-24 Yars (mobile)'
+          }
+        },
+        {
+          lat: 52.5,
+          lon: 104.0,
+          label: 'Irkutsk',
+          info: {
+            baseType: 'Nuclear ICBM Fields (Strategic Rocket Forces)',
+            location: '52.5°N, 104.0°E',
+            missileType: 'RS-24 Yars (mobile)'
+          }
+        },
+        {
+          lat: 57.0,
+          lon: 60.1,
+          label: 'Nizhny Tagil',
+          info: {
+            baseType: 'Nuclear ICBM Fields (Strategic Rocket Forces)',
+            location: '57.0°N, 60.1°E',
+            missileType: 'RS-24 Yars (mobile)'
+          }
+        },
+        {
+          lat: 57.6,
+          lon: 33.3,
+          label: 'Vypolzovo',
+          info: {
+            baseType: 'Nuclear ICBM Fields (Strategic Rocket Forces)',
+            location: '57.6°N, 33.3°E',
+            missileType: 'RS-24 Yars (mobile)'
+          }
+        },
+        {
+          lat: 59.2,
+          lon: 49.3,
+          label: 'Yurya',
+          info: {
+            baseType: 'Nuclear ICBM Fields (Strategic Rocket Forces)',
+            location: '59.2°N, 49.3°E',
+            missileType: 'Older site'
+          }
+        },
+        {
+          lat: 69.25,
+          lon: 33.33,
+          label: 'Gadzhiyevo',
+          info: {
+            baseType: 'Nuclear Submarine Base',
+            location: '69.25°N, 33.33°E',
+            fleet: 'Northern Fleet (Delta IV, Borei SSBNs)'
+          }
+        },
+        {
+          lat: 69.07,
+          lon: 33.42,
+          label: 'Severomorsk',
+          info: {
+            baseType: 'Nuclear Submarine Base',
+            location: '69.07°N, 33.42°E',
+            fleet: 'Northern Fleet HQ'
+          }
+        },
+        {
+          lat: 69.32,
+          lon: 32.92,
+          label: 'Vidyayevo',
+          info: {
+            baseType: 'Nuclear Submarine Base',
+            location: '69.32°N, 32.92°E',
+            fleet: 'Northern Fleet (attack subs)'
+          }
+        },
+        {
+          lat: 52.9,
+          lon: 158.4,
+          label: 'Vilyuchinsk',
+          info: {
+            baseType: 'Nuclear Submarine Base',
+            location: '52.9°N, 158.4°E',
+            fleet: 'Pacific Fleet (Borei SSBNs)'
+          }
+        },
+        {
+          lat: 53.0,
+          lon: 158.5,
+          label: 'Rybachiy',
+          info: {
+            baseType: 'Nuclear Submarine Base',
+            location: '53.0°N, 158.5°E',
+            fleet: 'Pacific Fleet'
+          }
+        },
+        {
+          lat: 69.2,
+          lon: 33.45,
+          label: 'Polyarny',
+          info: {
+            baseType: 'Naval Base',
+            location: '69.20°N, 33.45°E',
+            fleet: 'Northern Fleet submarines'
+          }
+        },
+        {
+          lat: 42.9,
+          lon: 132.9,
+          label: 'Fokino',
+          info: {
+            baseType: 'Naval Base',
+            location: '42.9°N, 132.9°E',
+            fleet: 'Pacific Fleet'
+          }
+        },
+        {
+          lat: 52.8,
+          lon: 158.2,
+          label: 'Pavlovskoye',
+          info: {
+            baseType: 'Naval Base',
+            location: '52.8°N, 158.2°E',
+            fleet: 'Pacific Fleet submarine support'
+          }
+        },
+        {
+          lat: 54.9,
+          lon: 43.3,
+          label: 'Sarov',
+          info: {
+            baseType: 'Nuclear Weapons Storage/Production',
+            location: '54.9°N, 43.3°E',
+            purpose: 'Nuclear warhead design (like Los Alamos)'
+          }
+        },
+        {
+          lat: 56.1,
+          lon: 60.7,
+          label: 'Snezhinsk',
+          info: {
+            baseType: 'Nuclear Weapons Storage/Production',
+            location: '56.1°N, 60.7°E',
+            purpose: 'Second warhead lab'
+          }
+        },
+        {
+          lat: 55.8,
+          lon: 60.7,
+          label: 'Ozersk',
+          info: {
+            baseType: 'Nuclear Weapons Storage/Production',
+            location: '55.8°N, 60.7°E',
+            purpose: 'Plutonium production'
+          }
+        },
+        {
+          lat: 56.6,
+          lon: 84.9,
+          label: 'Seversk',
+          info: {
+            baseType: 'Nuclear Weapons Storage/Production',
+            location: '56.6°N, 84.9°E',
+            purpose: 'Enrichment'
+          }
+        },
+        {
+          lat: 56.3,
+          lon: 93.5,
+          label: 'Zheleznogorsk',
+          info: {
+            baseType: 'Nuclear Weapons Storage/Production',
+            location: '56.3°N, 93.5°E',
+            purpose: 'Plutonium, underground reactor'
+          }
+        },
+        {
+          lat: 73.3,
+          lon: 54.6,
+          label: 'Novaya Zemlya',
+          info: {
+            baseType: 'Nuclear Weapons Storage/Production',
+            location: '73.3°N, 54.6°E',
+            purpose: 'Nuclear test site'
+          }
+        },
+        {
+          lat: 51.48175,
+          lon: 46.20797,
+          label: 'Engels-2',
+          info: {
+            baseType: 'Strategic Bomber Base',
+            location: '51.48175°N, 46.20797°E',
+            aircraft: 'Tu-160, Tu-95MS'
+          }
+        },
+        {
+          lat: 51.177,
+          lon: 128.442,
+          label: 'Ukrainka',
+          info: {
+            baseType: 'Strategic Bomber Base',
+            location: '51.17700°N, 128.44200°E',
+            aircraft: 'Tu-95MS'
+          }
+        },
+        {
+          lat: 55.57228,
+          lon: 38.14,
+          label: 'Shaykovka',
+          info: {
+            baseType: 'Strategic Bomber Base',
+            location: '55.57228°N, 38.14000°E',
+            aircraft: 'Tu-22M3'
+          }
+        },
+        {
+          lat: 43.782901,
+          lon: 44.615939,
+          label: 'Mozdok',
+          info: {
+            baseType: 'Strategic Bomber Base',
+            location: '43.782901°N, 44.615939°E',
+            aircraft: 'Staging base'
+          }
+        },
+        {
+          lat: 68.15,
+          lon: 33.46,
+          label: 'Olenya',
+          info: {
+            baseType: 'Strategic Bomber Base',
+            location: '68.15°N, 33.46°E',
+            aircraft: 'Tu-22M3'
+          }
+        },
+        {
+          lat: 54.64422,
+          lon: 39.56292,
+          label: 'Diaghilevo',
+          info: {
+            baseType: 'Strategic Bomber Base',
+            location: '54.64422°N, 39.56292°E',
+            aircraft: 'Tu-22M3'
+          }
+        },
+        {
+          lat: 68.55522,
+          lon: 146.23239,
+          label: 'Belaya',
+          info: {
+            baseType: 'Strategic Bomber Base',
+            location: '68.55522°N, 146.23239°E',
+            aircraft: 'Tu-22M3'
+          }
+        },
+        {
+          lat: 58.13531,
+          lon: 30.33481,
+          label: 'Soltsy-2',
+          info: {
+            baseType: 'Strategic Bomber Base',
+            location: '58.13531°N, 30.33481°E',
+            aircraft: 'Tu-22M3'
+          }
+        },
+        {
+          lat: 48.30303,
+          lon: 46.19739,
+          label: 'Akhtubinsk',
+          info: {
+            baseType: 'Strategic Bomber Base',
+            location: '48.30303°N, 46.19739°E',
+            aircraft: 'Test airfield, Su-57'
+          }
+        },
+        {
+          lat: 51.75,
+          lon: 36.28,
+          label: 'Kursk-Vostochny',
+          info: {
+            baseType: 'Strategic Bomber Base',
+            location: '51.75°N, 36.28°E',
+            aircraft: 'Fighter base'
+          }
+        },
+        {
+          lat: 48.95239,
+          lon: 40.30864,
+          label: 'Millerovo',
+          info: {
+            baseType: 'Strategic Bomber Base',
+            location: '48.95239°N, 40.30864°E',
+            aircraft: 'Fighter/attack base'
+          }
+        },
+        {
+          lat: 48.63842,
+          lon: 43.78428,
+          label: 'Marinovka',
+          info: {
+            baseType: 'Strategic Bomber Base',
+            location: '48.63842°N, 43.78428°E',
+            aircraft: 'Staging base'
+          }
+        },
+        {
+          lat: 45.03983,
+          lon: 39.16028,
+          label: 'Kushchevskaya',
+          info: {
+            baseType: 'Strategic Bomber Base',
+            location: '45.03983°N, 39.16028°E',
+            aircraft: 'Helicopter base'
+          }
+        },
+        {
+          lat: 46.68556,
+          lon: 38.24147,
+          label: 'Yeysk',
+          info: {
+            baseType: 'Strategic Bomber Base',
+            location: '46.68556°N, 38.24147°E',
+            aircraft: 'Naval aviation'
+          }
+        },
+        {
+          lat: 55.86328,
+          lon: 49.12456,
+          label: 'Borisoglebsk',
+          info: {
+            baseType: 'Strategic Bomber Base',
+            location: '55.86328°N, 49.12456°E',
+            aircraft: 'Training/reserve aircraft'
+          }
+        },
+        {
+          lat: 51.75389,
+          lon: 36.29597,
+          label: 'Khalino (Kursk)',
+          info: {
+            baseType: 'Strategic Bomber Base',
+            location: '51.75389°N, 36.29597°E',
+            aircraft: 'Su-30SM'
+          }
+        },
+        {
+          lat: 51.62275,
+          lon: 39.16147,
+          label: 'Voronezh-Malshevo',
+          info: {
+            baseType: 'Strategic Bomber Base',
+            location: '51.62275°N, 39.16147°E',
+            aircraft: 'Fighter base'
+          }
+        },
+        {
+          lat: 55.7558,
+          lon: 37.6173,
+          label: 'Moscow',
+          info: {
+            baseType: 'Air Defense / Early Warning',
+            location: '~56°N, 37-38°E',
+            system: 'A-135 ABM ring (Anti-ballistic missile defense)'
+          }
+        },
+        {
+          lat: 60.3,
+          lon: 30.6,
+          label: 'Lekhtusi',
+          info: {
+            baseType: 'Air Defense / Early Warning',
+            location: '60.3°N, 30.6°E',
+            system: 'Voronezh radar (Missile early warning)'
+          }
+        },
+        {
+          lat: 44.9,
+          lon: 40.1,
+          label: 'Armavir',
+          info: {
+            baseType: 'Air Defense / Early Warning',
+            location: '44.9°N, 40.1°E',
+            system: 'Voronezh radar (Missile early warning)'
+          }
+        },
+        {
+          lat: 54.8,
+          lon: 20.2,
+          label: 'Kaliningrad',
+          info: {
+            baseType: 'Air Defense / Early Warning',
+            location: '54.8°N, 20.2°E',
+            system: 'Voronezh radar (Missile early warning)'
+          }
+        },
+        {
+          lat: 51.2,
+          lon: 58.6,
+          label: 'Voronezh-DM, Orsk',
+          info: {
+            baseType: 'Air Defense / Early Warning',
+            location: '51.2°N, 58.6°E',
+            system: 'Voronezh-DM radar'
+          }
+        },
+        {
+          lat: 53.3,
+          lon: 83.5,
+          label: 'Voronezh-VP, Barnaul',
+          info: {
+            baseType: 'Air Defense / Early Warning',
+            location: '53.3°N, 83.5°E',
+            system: 'Voronezh-VP radar'
+          }
+        },
+        {
+          lat: 58.5,
+          lon: 92.2,
+          label: 'Voronezh-DM, Yeniseysk',
+          info: {
+            baseType: 'Air Defense / Early Warning',
+            location: '58.5°N, 92.2°E',
+            system: 'Voronezh-DM radar'
+          }
+        },
+        {
+          lat: 52.0,
+          lon: 103.2,
+          label: 'Voronezh-M, Mishelevka/Irkutsk',
+          info: {
+            baseType: 'Air Defense / Early Warning',
+            location: '52.0°N, 103.2°E',
+            system: 'Voronezh-M radar'
+          }
+        },
+        {
+          lat: 67.5,
+          lon: 63.9,
+          label: 'Voronezh-DM, Vorkuta',
+          info: {
+            baseType: 'Air Defense / Early Warning',
+            location: '67.5°N, 63.9°E',
+            system: 'Voronezh-DM radar'
+          }
+        },
+        {
+          lat: 60.1,
+          lon: 59.1,
+          label: 'Kosvinsky Kamen',
+          info: {
+            baseType: 'Command & Control',
+            location: '60.1°N, 59.1°E',
+            purpose: 'Deep bunker nuclear command'
+          }
+        },
+        {
+          lat: 54.3,
+          lon: 58.4,
+          label: 'Yamantau Mountain',
+          info: {
+            baseType: 'Command & Control',
+            location: '54.3°N, 58.4°E',
+            purpose: 'Suspected strategic bunker'
+          }
+        },
+        {
+          lat: 55.1,
+          lon: 37.5,
+          label: 'Chekhov',
+          info: {
+            baseType: 'Command & Control',
+            location: '55.1°N, 37.5°E',
+            purpose: 'Strategic command bunker'
+          }
+        }
+      ];
+      let staticMarkerLayer = null;
+      let militaryRussianZonesEnabled = false;
+      function getStaticMarkerStyle(item) {
+        const baseType = item.info && item.info.baseType ? String(item.info.baseType) : '';
+        if (baseType === 'Air Defense / Early Warning') {
+          return { color: '#ff6b6b', fillColor: '#b42318' };
+        }
+        if (baseType === 'Strategic Bomber Base') {
+          return { color: '#ff3b30', fillColor: '#7f1d1d' };
+        }
+        if (baseType === 'Nuclear Weapons Storage/Production') {
+          return { color: '#c084fc', fillColor: '#6b21a8' };
+        }
+        if (baseType.indexOf('Nuclear ICBM Fields') === 0) {
+          return { color: '#e879f9', fillColor: '#7e22ce' };
+        }
+        return { color: '#ffd166', fillColor: '#ff3b30' };
+      }
+      function drawStaticMarkers() {
+        if (staticMarkerLayer) {
+          map.removeLayer(staticMarkerLayer);
+          staticMarkerLayer = null;
+        }
+        if (!militaryRussianZonesEnabled) return;
+
+        staticMarkerLayer = L.layerGroup();
+        staticMarkers.forEach((item) => {
+          const markerStyle = getStaticMarkerStyle(item);
+          const marker = L.circleMarker([item.lat, item.lon], {
+            radius: 8,
+            color: markerStyle.color,
+            weight: 2,
+            fillColor: markerStyle.fillColor,
+            fillOpacity: 0.95
+          }).addTo(staticMarkerLayer);
+          marker.bindTooltip(item.label, {
+            permanent: true,
+            direction: 'top',
+            className: 'static-fixed-label',
+            offset: [0, -10],
+            interactive: true
+          });
+          if (item.info) {
+            const detailLabel = item.info.missileType
+              ? 'Missile Type'
+              : item.info.system
+              ? 'System'
+              : item.info.purpose
+              ? 'Purpose'
+              : item.info.fleet
+              ? 'Fleet'
+              : 'Aircraft';
+            const detailValue =
+              item.info.missileType ||
+              item.info.system ||
+              item.info.purpose ||
+              item.info.fleet ||
+              item.info.aircraft ||
+              '—';
+            const entityLabel = item.info.purpose ? 'Site' : 'Base';
+            const popupContent =
+              '<div style="font-size:12px;line-height:1.35;min-width:180px;">' +
+              entityLabel + ': <b>' + item.label + '</b><br>' +
+              (item.info.baseType ? 'Type: ' + item.info.baseType + '<br>' : '') +
+              'Location: ' + item.info.location + '<br>' +
+              detailLabel + ': ' + detailValue +
+              '</div>';
+            const openInfoPopup = function () {
+              L.popup({
+                className: 'static-fixed-popup',
+                closeButton: true,
+                autoClose: true,
+                closeOnClick: true,
+                offset: [0, -4]
+              })
+                .setLatLng([item.lat, item.lon])
+                .setContent(popupContent)
+                .openOn(map);
+            };
+            const tooltip = marker.getTooltip();
+            if (tooltip) {
+              tooltip.on('click', function (evt) {
+                if (evt && evt.originalEvent) L.DomEvent.stop(evt.originalEvent);
+                openInfoPopup();
+              });
+            }
+            // Keep popup action on label tap only.
+            marker.on('click', function (evt) {
+              if (evt && evt.originalEvent) L.DomEvent.stop(evt.originalEvent);
+            });
+          }
+        });
+        staticMarkerLayer.addTo(map);
+      }
 
       // FIR Airspace boundaries (from official Eurocontrol GeoJSON data)
       // Source: https://gist.github.com/LC43/5d6a009d83172d308a01a1c864b71e68
@@ -595,6 +1329,11 @@ function buildMapHtml() {
       let firLayerGroup = null;
       let firEnabled = false;
 
+      // Military airspace zones layer (OpenAIP)
+      let militaryAirspaceLayerGroup = null;
+      let militaryAirspaceEnabled = false;
+      let militaryAirspaceCache = null;
+
       // Russian aircraft tracks layer
       let russianTracksLayerGroup = null;
       let russianTracksData = [];
@@ -658,6 +1397,88 @@ function buildMapHtml() {
           firLayerGroup.addLayer(polygon);
         });
         firLayerGroup.addTo(map);
+      }
+
+      // Military airspace type colors (OpenAIP type codes)
+      const militaryAirspaceColors = {
+        1: '#ff3b30',   // Restricted
+        2: '#ff6b6b',   // Danger
+        3: '#af52de',   // Prohibited
+        12: '#ff2d55',  // MATZ
+        15: '#ff9500',  // Alert Area
+        16: '#ffcc00',  // Warning Area
+        20: '#5ac8fa',  // TRA
+        21: '#5856d6',  // TSA
+      };
+
+      const militaryAirspaceTypeNames = {
+        1: 'Restricted', 2: 'Danger', 3: 'Prohibited',
+        12: 'MATZ', 15: 'Alert', 16: 'Warning',
+        20: 'TRA', 21: 'TSA'
+      };
+
+      // No fetch needed in WebView - data comes from React Native via postMessage
+
+      function drawMilitaryAirspace(features) {
+        if (militaryAirspaceLayerGroup) {
+          map.removeLayer(militaryAirspaceLayerGroup);
+          militaryAirspaceLayerGroup = null;
+        }
+        if (!militaryAirspaceEnabled || !features || features.length === 0) return;
+
+        militaryAirspaceLayerGroup = L.layerGroup();
+        features.forEach((feature) => {
+          try {
+            const props = feature.properties;
+            const geom = feature.geometry;
+            if (!geom || !geom.coordinates || geom.coordinates.length === 0) return;
+            
+            // GeoJSON coordinates are [lng, lat], Leaflet needs [lat, lng]
+            const coords = geom.coordinates[0].map(c => [c[1], c[0]]);
+            if (coords.length < 3) return;
+            
+            const airType = props.type;
+            const color = militaryAirspaceColors[airType] || '#ff9500';
+            const typeName = militaryAirspaceTypeNames[airType] || 'Airspace';
+            const name = props.name || 'Unknown';
+            const upperLimit = props.upperLimit ? (props.upperLimit.value + ' ' + (props.upperLimit.unit === 1 ? 'ft' : props.upperLimit.unit === 6 ? 'FL' : '')) : '';
+            const lowerLimit = props.lowerLimit ? (props.lowerLimit.value + ' ' + (props.lowerLimit.unit === 1 ? 'ft' : props.lowerLimit.unit === 6 ? 'FL' : '')) : '';
+            
+            const polygon = L.polygon(coords, {
+              color: color,
+              weight: 2,
+              opacity: 0.8,
+              fillColor: color,
+              fillOpacity: 0.15,
+              dashArray: '4, 4'
+            });
+
+            // Add detailed popup on click for border zones and large restricted areas
+            var popupContent = '<div style="max-width:220px;font-size:12px;">';
+            popupContent += '<b style="color:' + color + ';">' + typeName + '</b><br>';
+            popupContent += '<b>' + name + '</b><br>';
+            if (upperLimit || lowerLimit) {
+              popupContent += lowerLimit + ' → ' + upperLimit + '<br>';
+            }
+            if (props.country) {
+              popupContent += 'Country: ' + props.country + '<br>';
+            }
+            if (name.indexOf('EFR100') !== -1) {
+              popupContent += '<hr style="border-color:#ff3b30;margin:4px 0;">';
+              popupContent += '<span style="color:#ff3b30;font-weight:bold;">Finnish-Russian Border Zone</span><br>';
+              popupContent += 'Restriction covers from ground to FL280 (28,000 ft). Any aircraft below FL280 near the border needs authorization. ';
+              popupContent += 'Commercial airliners above FL280 (FL300–FL400) can overfly, but anything below is restricted.';
+            }
+            popupContent += '</div>';
+            polygon.bindPopup(popupContent, { className: 'military-airspace-popup' });
+
+            
+            militaryAirspaceLayerGroup.addLayer(polygon);
+          } catch (e) {
+            // skip malformed entries
+          }
+        });
+        militaryAirspaceLayerGroup.addTo(map);
       }
 
       const recenterButton = L.DomUtil.create('button', 'recenter-control', map.getContainer());
@@ -1211,9 +2032,27 @@ function buildMapHtml() {
             }
             updateClosestLine();
           }
+          if (data.type === 'militaryRussianZones') {
+            militaryRussianZonesEnabled = !!data.enabled;
+            drawStaticMarkers();
+          }
           if (data.type === 'fir') {
             firEnabled = !!data.enabled;
             drawFirBoundaries();
+          }
+          if (data.type === 'militaryAirspace') {
+            militaryAirspaceEnabled = !!data.enabled;
+            if (militaryAirspaceEnabled && data.features) {
+              militaryAirspaceCache = data.features;
+              drawMilitaryAirspace(data.features);
+            } else if (militaryAirspaceEnabled && militaryAirspaceCache) {
+              drawMilitaryAirspace(militaryAirspaceCache);
+            } else {
+              if (militaryAirspaceLayerGroup) {
+                map.removeLayer(militaryAirspaceLayerGroup);
+                militaryAirspaceLayerGroup = null;
+              }
+            }
           }
           if (data.type === 'russianTracks') {
             russianTracksData = data.tracks || [];
@@ -1287,6 +2126,7 @@ function buildMapHtml() {
 export default function HomeScreen() {
   const webViewRef = useRef<WebView>(null);
   const {
+    enableAircraftTracker,
     radiusKm,
     useCustomCenter,
     customCenter,
@@ -1301,6 +2141,8 @@ export default function HomeScreen() {
     enableProximity,
     showFirAirspaces,
     showRussianAircraft,
+    showMilitaryAirspace,
+    showMilitaryRussianZones,
     hslRadiusEnabled,
     hslRadiusKm,
     hslLineFilter,
@@ -1647,6 +2489,13 @@ export default function HomeScreen() {
   }, [location, useCustomCenter, customCenter, webReady]);
 
   useEffect(() => {
+    if (!enableAircraftTracker) {
+      latestAircraftRef.current = [];
+      webViewRef.current?.postMessage(JSON.stringify({ type: 'aircraft', items: [] }));
+      setLoading(false);
+      setError(null);
+      return;
+    }
     const coords = useCustomCenter
       ? customCenter
       : location?.coords ?? (USE_DEMO_LOCATION ? DEMO_COORDS : null);
@@ -1711,7 +2560,17 @@ export default function HomeScreen() {
       isMounted = false;
       if (timer) clearInterval(timer);
     };
-  }, [permissionStatus, location, radiusKm, useCustomCenter, customCenter, enableProximity, showRussianAircraft, isRussianAircraft]);
+  }, [
+    enableAircraftTracker,
+    permissionStatus,
+    location,
+    radiusKm,
+    useCustomCenter,
+    customCenter,
+    enableProximity,
+    showRussianAircraft,
+    isRussianAircraft,
+  ]);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -1888,18 +2747,70 @@ export default function HomeScreen() {
 
   useEffect(() => {
     if (!webReady) return;
-    webViewRef.current?.postMessage(JSON.stringify({ type: 'trace', enabled: enableTracing }));
-  }, [enableTracing, webReady]);
+    webViewRef.current?.postMessage(
+      JSON.stringify({ type: 'trace', enabled: enableAircraftTracker && enableTracing })
+    );
+  }, [enableAircraftTracker, enableTracing, webReady]);
 
   useEffect(() => {
     if (!webReady) return;
-    webViewRef.current?.postMessage(JSON.stringify({ type: 'proximity', enabled: enableProximity }));
-  }, [enableProximity, webReady]);
+    webViewRef.current?.postMessage(
+      JSON.stringify({ type: 'proximity', enabled: enableAircraftTracker && enableProximity })
+    );
+  }, [enableAircraftTracker, enableProximity, webReady]);
 
   useEffect(() => {
     if (!webReady) return;
     webViewRef.current?.postMessage(JSON.stringify({ type: 'fir', enabled: showFirAirspaces }));
   }, [showFirAirspaces, webReady]);
+
+  useEffect(() => {
+    if (!webReady) return;
+    webViewRef.current?.postMessage(
+      JSON.stringify({ type: 'militaryRussianZones', enabled: showMilitaryRussianZones })
+    );
+  }, [showMilitaryRussianZones, webReady]);
+
+  // Military airspace - fetch data from React Native side and send to WebView
+  const militaryAirspaceCacheRef = useRef<any[] | null>(null);
+  useEffect(() => {
+    if (!webReady) return;
+    if (!showMilitaryAirspace) {
+      webViewRef.current?.postMessage(JSON.stringify({ type: 'militaryAirspace', enabled: false }));
+      return;
+    }
+    // If cached, send cached data
+    if (militaryAirspaceCacheRef.current) {
+      webViewRef.current?.postMessage(JSON.stringify({ type: 'militaryAirspace', enabled: true, features: militaryAirspaceCacheRef.current }));
+      return;
+    }
+    // Fetch from React Native side (no CORS issues)
+    const militaryTypes = new Set([1, 3, 12, 16, 20]);
+    const countries = ['fi', 'se', 'no', 'ee', 'lv', 'lt', 'dk', 'pl', 'ru', 'by', 'es', 'my', 'th'];
+    const baseUrl = 'https://storage.googleapis.com/29f98e10-a489-4c82-ae5e-489dbcd4912f/';
+    Promise.allSettled(
+      countries.map(cc =>
+        fetch(baseUrl + cc + '_asp.geojson').then(r => r.ok ? r.json() : null)
+      )
+    ).then(results => {
+      const allFeatures: any[] = [];
+      results.forEach(result => {
+        if (result.status === 'fulfilled' && result.value && result.value.features) {
+          result.value.features.forEach((feature: any) => {
+            if (feature.properties && militaryTypes.has(feature.properties.type)) {
+              allFeatures.push(feature);
+            }
+          });
+        }
+      });
+      militaryAirspaceCacheRef.current = allFeatures;
+      if (showMilitaryAirspace) {
+        webViewRef.current?.postMessage(JSON.stringify({ type: 'militaryAirspace', enabled: true, features: allFeatures }));
+      }
+    }).catch(err => {
+      console.error('Military airspace fetch error:', err);
+    });
+  }, [showMilitaryAirspace, webReady]);
 
   // Russian aircraft tracks - fetch and display when toggle is enabled
   useEffect(() => {
@@ -1938,13 +2849,21 @@ export default function HomeScreen() {
   }, [showRussianAircraft, webReady]);
 
   useEffect(() => {
-    if (!webReady || !enableProximity) return;
+    if (!webReady || !enableAircraftTracker || !enableProximity) return;
     const center = useCustomCenter
       ? customCenter
       : lastCoordsRef.current ?? (location?.coords ?? (USE_DEMO_LOCATION ? DEMO_COORDS : null));
     if (!center) return;
     sendProximityTarget(latestAircraftRef.current, center);
-  }, [enableProximity, selectedAircraft, webReady, location, useCustomCenter, customCenter]);
+  }, [
+    enableAircraftTracker,
+    enableProximity,
+    selectedAircraft,
+    webReady,
+    location,
+    useCustomCenter,
+    customCenter,
+  ]);
 
   return (
     <View style={styles.container}>
@@ -1970,10 +2889,16 @@ export default function HomeScreen() {
                 JSON.stringify({ type: 'hslBuses', enabled: showHslBuses })
               );
               webViewRef.current?.postMessage(
-                JSON.stringify({ type: 'trace', enabled: enableTracing })
+                JSON.stringify({
+                  type: 'trace',
+                  enabled: enableAircraftTracker && enableTracing,
+                })
               );
               webViewRef.current?.postMessage(
-                JSON.stringify({ type: 'proximity', enabled: enableProximity })
+                JSON.stringify({
+                  type: 'proximity',
+                  enabled: enableAircraftTracker && enableProximity,
+                })
               );
               const coords = useCustomCenter ? customCenter : lastCoordsRef.current;
               if (coords) {
@@ -1998,6 +2923,9 @@ export default function HomeScreen() {
             }
             if (data?.type === 'jsError') {
               setWebError(`Map error: ${data.message}`);
+            }
+            if (data?.type === 'debug') {
+              Alert.alert('Debug', data.message || 'No message');
             }
             if (data?.type === 'select') {
               setSelectedAircraft(data.item || null);
@@ -2174,11 +3102,7 @@ export default function HomeScreen() {
             </ScrollView>
           ) : null}
         </View>
-      ) : (
-        <View style={styles.sheetHintOnly}>
-          <Text style={styles.sheetHint}>Tap a plane icon to view details.</Text>
-        </View>
-      )}
+      ) : null}
 
       {loading ? (
         <View style={styles.loading}>

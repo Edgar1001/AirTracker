@@ -1,5 +1,5 @@
 import Slider from '@react-native-community/slider';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
@@ -12,6 +12,8 @@ export default function ExploreScreen() {
   const [aircraftExpanded, setAircraftExpanded] = useState(true);
   const [isClearing, setIsClearing] = useState(false);
   const {
+    enableAircraftTracker,
+    setEnableAircraftTracker,
     radiusKm,
     setRadiusKm,
     useCustomCenter,
@@ -36,11 +38,30 @@ export default function ExploreScreen() {
     setShowFirAirspaces,
     showRussianAircraft,
     setShowRussianAircraft,
+    showMilitaryAirspace,
+    setShowMilitaryAirspace,
+    showMilitaryRussianZones,
+    setShowMilitaryRussianZones,
     hslRadiusEnabled,
     setHslRadiusEnabled,
     hslRadiusKm,
     setHslRadiusKm,
   } = useSettings();
+
+  useEffect(() => {
+    if (enableAircraftTracker) return;
+    if (useCustomCenter) setUseCustomCenter(false);
+    if (enableTracing) setEnableTracing(false);
+    if (enableProximity) setEnableProximity(false);
+  }, [
+    enableAircraftTracker,
+    useCustomCenter,
+    enableTracing,
+    enableProximity,
+    setUseCustomCenter,
+    setEnableTracing,
+    setEnableProximity,
+  ]);
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -51,6 +72,15 @@ export default function ExploreScreen() {
         </Pressable>
         {aircraftExpanded ? (
           <View style={styles.hslPanel}>
+      <View style={styles.toggleRow}>
+        <Text style={styles.label}>Enable Aircraft tracker</Text>
+        <Switch
+          value={enableAircraftTracker}
+          onValueChange={(value) => setEnableAircraftTracker(value)}
+          trackColor={{ false: '#2b2f36', true: '#f7c948' }}
+          thumbColor={enableAircraftTracker ? '#0f1116' : '#9aa4b2'}
+        />
+      </View>
       <ThemedText style={styles.label}>Radius: {Math.round(radiusKm)} km</ThemedText>
 
       <View style={styles.sliderCard}>
@@ -75,6 +105,7 @@ export default function ExploreScreen() {
           <Switch
             value={useCustomCenter}
             onValueChange={(value) => setUseCustomCenter(value)}
+            disabled={!enableAircraftTracker}
             trackColor={{ false: '#2b2f36', true: '#f7c948' }}
             thumbColor={useCustomCenter ? '#0f1116' : '#9aa4b2'}
           />
@@ -84,6 +115,7 @@ export default function ExploreScreen() {
           <Switch
             value={enableTracing}
             onValueChange={(value) => setEnableTracing(value)}
+            disabled={!enableAircraftTracker}
             trackColor={{ false: '#2b2f36', true: '#a66cff' }}
             thumbColor={enableTracing ? '#0f1116' : '#9aa4b2'}
           />
@@ -93,6 +125,7 @@ export default function ExploreScreen() {
           <Switch
             value={enableProximity}
             onValueChange={(value) => setEnableProximity(value)}
+            disabled={!enableAircraftTracker}
             trackColor={{ false: '#2b2f36', true: '#4fd1c5' }}
             thumbColor={enableProximity ? '#0f1116' : '#9aa4b2'}
           />
@@ -149,6 +182,24 @@ export default function ExploreScreen() {
             {isClearing ? 'Clearing...' : 'Clear Russian Aircraft Data'}
           </Text>
         </Pressable>
+        <View style={styles.toggleRow}>
+          <Text style={styles.label}>Military Airspace Zones</Text>
+          <Switch
+            value={showMilitaryAirspace}
+            onValueChange={(value) => setShowMilitaryAirspace(value)}
+            trackColor={{ false: '#2b2f36', true: '#ff9500' }}
+            thumbColor={showMilitaryAirspace ? '#0f1116' : '#9aa4b2'}
+          />
+        </View>
+        <View style={styles.toggleRow}>
+          <Text style={styles.label}>Military Russian zones</Text>
+          <Switch
+            value={showMilitaryRussianZones}
+            onValueChange={(value) => setShowMilitaryRussianZones(value)}
+            trackColor={{ false: '#2b2f36', true: '#ff4444' }}
+            thumbColor={showMilitaryRussianZones ? '#0f1116' : '#9aa4b2'}
+          />
+        </View>
           </View>
         ) : null}
       </ThemedView>

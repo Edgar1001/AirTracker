@@ -4,6 +4,8 @@ import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 const SETTINGS_STORAGE_KEY = 'airtracker.settings.v1';
 
 export type SettingsContextValue = {
+  enableAircraftTracker: boolean;
+  setEnableAircraftTracker: (value: boolean) => void;
   radiusKm: number;
   setRadiusKm: (value: number) => void;
   useCustomCenter: boolean;
@@ -30,6 +32,10 @@ export type SettingsContextValue = {
   setShowFirAirspaces: (value: boolean) => void;
   showRussianAircraft: boolean;
   setShowRussianAircraft: (value: boolean) => void;
+  showMilitaryAirspace: boolean;
+  setShowMilitaryAirspace: (value: boolean) => void;
+  showMilitaryRussianZones: boolean;
+  setShowMilitaryRussianZones: (value: boolean) => void;
   hslRadiusEnabled: boolean;
   setHslRadiusEnabled: (value: boolean) => void;
   hslRadiusKm: number;
@@ -41,6 +47,7 @@ export type SettingsContextValue = {
 const SettingsContext = createContext<SettingsContextValue | null>(null);
 
 export function SettingsProvider({ children }: { children: React.ReactNode }) {
+  const [enableAircraftTracker, setEnableAircraftTracker] = useState(true);
   const [radiusKm, setRadiusKm] = useState(200);
   const [useCustomCenter, setUseCustomCenter] = useState(false);
   const [customCenter, setCustomCenter] = useState<{ latitude: number; longitude: number } | null>(
@@ -56,6 +63,8 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
   const [enableProximity, setEnableProximity] = useState(false);
   const [showFirAirspaces, setShowFirAirspaces] = useState(false);
   const [showRussianAircraft, setShowRussianAircraft] = useState(false);
+  const [showMilitaryAirspace, setShowMilitaryAirspace] = useState(false);
+  const [showMilitaryRussianZones, setShowMilitaryRussianZones] = useState(false);
   const [hslRadiusEnabled, setHslRadiusEnabled] = useState(true);
   const [hslRadiusKm, setHslRadiusKm] = useState(0.6);
   const [hslLineFilter, setHslLineFilter] = useState('');
@@ -71,6 +80,8 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
           customCenter?: { latitude?: unknown; longitude?: unknown } | null;
         };
         if (typeof parsed.radiusKm === 'number') setRadiusKm(parsed.radiusKm);
+        if (typeof parsed.enableAircraftTracker === 'boolean')
+          setEnableAircraftTracker(parsed.enableAircraftTracker);
         if (typeof parsed.useCustomCenter === 'boolean') setUseCustomCenter(parsed.useCustomCenter);
         if (
           parsed.customCenter &&
@@ -93,6 +104,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
         if (typeof parsed.enableProximity === 'boolean') setEnableProximity(parsed.enableProximity);
         if (typeof parsed.showFirAirspaces === 'boolean') setShowFirAirspaces(parsed.showFirAirspaces);
         if (typeof parsed.showRussianAircraft === 'boolean') setShowRussianAircraft(parsed.showRussianAircraft);
+        if (typeof parsed.showMilitaryAirspace === 'boolean') setShowMilitaryAirspace(parsed.showMilitaryAirspace);
         if (typeof parsed.hslRadiusEnabled === 'boolean')
           setHslRadiusEnabled(parsed.hslRadiusEnabled);
         if (typeof parsed.hslRadiusKm === 'number') setHslRadiusKm(parsed.hslRadiusKm);
@@ -112,6 +124,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!hydrated) return;
     const payload = {
+      enableAircraftTracker,
       radiusKm,
       useCustomCenter,
       customCenter,
@@ -125,12 +138,14 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
       enableProximity,
       showFirAirspaces,
       showRussianAircraft,
+      showMilitaryAirspace,
       hslRadiusEnabled,
       hslRadiusKm,
       hslLineFilter,
     };
     void AsyncStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(payload));
   }, [
+    enableAircraftTracker,
     radiusKm,
     useCustomCenter,
     customCenter,
@@ -144,6 +159,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     enableProximity,
     showFirAirspaces,
     showRussianAircraft,
+    showMilitaryAirspace,
     hslRadiusEnabled,
     hslRadiusKm,
     hslLineFilter,
@@ -151,6 +167,8 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
   ]);
   const value = useMemo(
     () => ({
+      enableAircraftTracker,
+      setEnableAircraftTracker,
       radiusKm,
       setRadiusKm,
       useCustomCenter,
@@ -177,6 +195,10 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
       setShowFirAirspaces,
       showRussianAircraft,
       setShowRussianAircraft,
+      showMilitaryAirspace,
+      setShowMilitaryAirspace,
+      showMilitaryRussianZones,
+      setShowMilitaryRussianZones,
       hslRadiusEnabled,
       setHslRadiusEnabled,
       hslRadiusKm,
@@ -185,6 +207,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
       setHslLineFilter,
     }),
     [
+      enableAircraftTracker,
       radiusKm,
       useCustomCenter,
       customCenter,
@@ -198,6 +221,8 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
       enableProximity,
       showFirAirspaces,
       showRussianAircraft,
+      showMilitaryAirspace,
+      showMilitaryRussianZones,
       hslRadiusEnabled,
       hslRadiusKm,
       hslLineFilter,
