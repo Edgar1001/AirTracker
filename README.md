@@ -5,9 +5,9 @@ A real-time aircraft tracking application built with Android.
 ## Features
 
 Track aircraft in real-time with detailed information including:
-- **Airline identification** — See which airline operates each flight
-- **Speed & Altitude** — Monitor aircraft speed and altitude data
-- **FIR Zones** — View Flight Information Region (FIR) boundaries for each country where aircraft are flying
+- **Airline identification** - See which airline operates each flight
+- **Speed & Altitude** - Monitor aircraft speed and altitude data
+- **FIR Zones** - View Flight Information Region (FIR) boundaries for each country where aircraft are flying
 
 ![Aircraft Tracing](assets/images/Aircraft-tracing.png)
 
@@ -16,8 +16,8 @@ Track aircraft in real-time with detailed information including:
 ### Public Transport Tracking
 
 Track public transport in real-time:
-- **Buses, Trains, Trams & Ferries** — Monitor multiple transport types on a live map
-- **Line Filtering** — Filter by line number to see specific routes and their current positions
+- **Buses, Trains, Trams & Ferries** - Monitor multiple transport types on a live map
+- **Line Filtering** - Filter by line number to see specific routes and their current positions
 
 ![Public Transport](assets/images/Aircraft3.png)
 
