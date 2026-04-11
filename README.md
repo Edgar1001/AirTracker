@@ -1,6 +1,6 @@
-# AirTrack ✈️
+# AirTracker
 
-A real-time aircraft tracking application built with Expo.
+A real-time aircraft tracking application built with Android.
 
 ## Features
 
