@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <radialGradient id="screen">
+      <stop stop-color="#123a32"/>
+      <stop offset="1" stop-color="#050b10"/>
+    </radialGradient>
+    <linearGradient id="sweep" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#58ffc3" stop-opacity="0"/>
+      <stop offset="1" stop-color="#58ffc3" stop-opacity=".45"/>
+    </linearGradient>
+    <linearGradient id="aircraft" x1="0" y1="0" x2="0" y2="1">
+      <stop stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#c5f9ef"/>
+    </linearGradient>
+  </defs>
+  <rect width="1024" height="1024" fill="#050b10"/>
+  <g id="radar-artwork" transform="translate(512 512) scale(1.24) translate(-512 -512)">
+    <circle cx="512" cy="512" r="300" fill="url(#screen)"/>
+    <path d="M512 512L512 212A300 300 0 0 1 794 409Z" fill="url(#sweep)"/>
+    <g fill="none" stroke="#58ffc3">
+      <circle cx="512" cy="512" r="300" stroke-width="5" opacity=".8"/>
+      <circle cx="512" cy="512" r="205" stroke-width="3" opacity=".4"/>
+      <circle cx="512" cy="512" r="108" stroke-width="3" opacity=".3"/>
+      <circle cx="512" cy="512" r="316" stroke-width="6" stroke-dasharray="2 39.36" opacity=".5"/>
+      <path d="M512 212V812M212 512H812" stroke-width="2" opacity=".22"/>
+      <path d="M512 512L794 409" stroke-width="5" stroke-linecap="round"/>
+    </g>
+    <g fill="#58ffc3">
+      <circle cx="355" cy="420" r="23" opacity=".1"/>
+      <circle cx="355" cy="420" r="12" opacity=".2"/>
+      <circle cx="355" cy="420" r="6"/>
+      <circle cx="639" cy="687" r="23" opacity=".1"/>
+      <circle cx="639" cy="687" r="12" opacity=".2"/>
+      <circle cx="639" cy="687" r="6"/>
+      <circle cx="689" cy="367" r="29" opacity=".12"/>
+      <circle cx="689" cy="367" r="16" opacity=".25"/>
+      <circle cx="689" cy="367" r="8"/>
+    </g>
+    <path d="M0-132C10-132 14-118 14-106V-32L104 29Q112 35 112 45V59L14 29V95L43 117V133L0 119L-43 133V117L-14 95V29L-112 59V45Q-112 35-104 29L-14-32V-106C-14-118-10-132 0-132Z" transform="translate(512 506) rotate(35)" fill="#050b10" stroke="#050b10" stroke-width="18" stroke-linejoin="round" opacity=".6"/>
+    <path d="M0-132C10-132 14-118 14-106V-32L104 29Q112 35 112 45V59L14 29V95L43 117V133L0 119L-43 133V117L-14 95V29L-112 59V45Q-112 35-104 29L-14-32V-106C-14-118-10-132 0-132Z" transform="translate(512 496) rotate(35)" fill="url(#aircraft)"/>
+  </g>
+</svg>
